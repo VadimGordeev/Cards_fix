@@ -45,6 +45,7 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
     var color: UIColor!
     var cornerRadius = 20
     private var startTouchPoint: CGPoint!
+    private var touchOffset = CGPoint.zero
     
     init(frame: CGRect, color: UIColor) {
         super.init(frame: frame)
@@ -73,18 +74,24 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
         }
     }
     
+    
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        изменение координат точки привязки
-        anchorPoint.x = touches.first!.location(in: window).x - frame.minX
-        anchorPoint.y = touches.first!.location(in: window).y - frame.minY
-        
-//        сохранение исходных координат
+        guard let touch = touches.first else { return }
+        // точка касания внутри карточки
+        let locationInCard = touch.location(in: self)
+        touchOffset = locationInCard
+        // запоминаем стартовую позицию для flip
         startTouchPoint = frame.origin
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        self.frame.origin.x = touches.first!.location(in: window).x - anchorPoint.x
-        self.frame.origin.y = touches.first!.location(in: window).y - anchorPoint.y
+        guard let touch = touches.first, let superview = superview else { return }
+        // точка касания относительно доски
+        let locationInSuperview = touch.location(in: superview)
+        // смещаем карточку так, чтобы точка касания осталась на месте
+        frame.origin.x = locationInSuperview.x - touchOffset.x
+        frame.origin.y = locationInSuperview.y - touchOffset.y
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
