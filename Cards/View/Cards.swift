@@ -24,6 +24,7 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
     }
     var isInteractionLocked = false
     var flipCompletionHandler: ((FlippableView) -> Void)?
+    var isMatched = false
     
     func flip(isHint: Bool = false) {
         //        определяем, между какими представлениями осуществить переход

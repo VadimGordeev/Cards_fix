@@ -14,7 +14,7 @@ class Game {
 //    генерация массива случайных карт
     func generateCards() {
         var cards = [Card]()
-        for _ in 0...cardsCount {
+        for _ in 0..<cardsCount {
             let randomElement = (
                 type: CardType.allCases.randomElement()!,
                 color: CardColor.allCases
@@ -30,5 +30,9 @@ class Game {
             return true
         }
         return false
+    }
+    
+    func isCompleted() -> Bool {
+        return cards.isEmpty
     }
 }

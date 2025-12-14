@@ -58,7 +58,7 @@ class BoardGameController: UIViewController {
     }
     
 //    количество пар уникальных карточек
-    var cardsPairsCounts = 5
+    var cardsPairsCounts = 2
 //    сущность "Игра"
     lazy var game: Game = getNewGame()
     
@@ -244,10 +244,19 @@ class BoardGameController: UIViewController {
                         }, completion: { _ in
                             self.flippedCards.first!.removeFromSuperview()
                             self.flippedCards.last!.removeFromSuperview()
+                            if let firstIndex = self.cardViews.firstIndex(of: self.flippedCards.first!) {
+                                self.cardViews.remove(at: firstIndex)
+                            }
+                            if let secondIndex = self.cardViews.firstIndex(of: self.flippedCards.last!) {
+                                self.cardViews.remove(at: secondIndex)
+                            }
                             self.flippedCards = []
+                            if self.cardViews.isEmpty {
+                                self.showGameOverPopup()
+                            }
                         })
 //                        в ином случае
-                    } else {
+                    } else  {
 //                        переворачиваем карточки рубашкой вверх
 //                        обновляем очки
                         scoreManager.mismatch()
@@ -277,6 +286,28 @@ class BoardGameController: UIViewController {
 //            размещение карточки на игровом поле
             boardGameView.addSubview(card)
         }
+    }
+    
+    private func showGameOverPopup() {
+        // cоздаем алерт
+        let alert = UIAlertController(
+            title: "Game Over",
+            message: "Your final score: \(scoreManager.score)",
+            preferredStyle: .alert
+        )
+        
+        // кнопка "Restart"
+        let restartAction = UIAlertAction(title: "Restart Game", style: .default) { _ in
+            self.startGame()
+        }
+        alert.addAction(restartAction)
+        
+        // кнопка "Cancel"
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        alert.addAction(cancelAction)
+        
+        // показываем алерт
+        present(alert, animated: true, completion: nil)
     }
 
     func startGame() {
