@@ -189,7 +189,6 @@ class BoardGameController: UIViewController {
             card.frame.origin = CGPoint(x: randomXCoordinate, y: randomYCoordinate)
 //            размещение карточки на игровом поле
             boardGameView.addSubview(card)
-            print("Card frame: \(card.frame), subviews: \(boardGameView.subviews)")
         }
     }
 
