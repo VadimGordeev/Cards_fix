@@ -19,9 +19,15 @@ class BoardGameController: UIViewController {
         view.addSubview(startButtonView)
         view.addSubview(boardGameView)
         view.addSubview(hintButtonView)
+        view.addSubview(scoreLabel)
     }
     
-    //    изменение положения кнопки
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        startGame()
+    }
+    
+    //    изменение положения элементов
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
@@ -41,7 +47,14 @@ class BoardGameController: UIViewController {
             - view.safeAreaInsets.bottom
             - margin
         )
-        startGame()
+        scoreLabel.sizeToFit()
+        scoreLabel.center = CGPoint(
+            x: (startButtonView.frame.maxX + hintButtonView.frame.minX) / 2,
+            y: startButtonView.center.y
+        )
+        
+        let centerX = (startButtonView.frame.maxX + hintButtonView.frame.minX) / 2
+        scoreLabel.center = CGPoint(x: centerX, y: startButtonView.center.y)
     }
     
 //    количество пар уникальных карточек
@@ -62,6 +75,7 @@ class BoardGameController: UIViewController {
     lazy var hintButtonView = getHintButtonView()
 //    игровое поле
     lazy var boardGameView = getBoardGameView()
+    lazy var scoreLabel = getScoreLabel()
     
 //    размеры карточек
     private var cardSize: CGSize {
@@ -77,6 +91,7 @@ class BoardGameController: UIViewController {
     }
     
     private var flippedCards = [UIView]()
+    private let scoreManager = ScoreManager()
     
 //    игральные карточки
     var cardViews = [UIView]()
@@ -97,7 +112,7 @@ class BoardGameController: UIViewController {
 
         // 2 настройка внешнего вида через конфигурацию
         var config = UIButton.Configuration.filled()
-        config.title = "Restart Game"
+        config.title = "Restart"
         config.baseBackgroundColor = .systemGray4
         config.baseForegroundColor = .black
 
@@ -152,6 +167,23 @@ class BoardGameController: UIViewController {
         return button
     }
     
+    private func getScoreLabel() -> UILabel {
+        let scoreLabel = UILabel()
+        scoreLabel.tag = 101
+        scoreLabel.font = .boldSystemFont(ofSize: 18)
+        scoreLabel.textColor = .black
+        scoreLabel.text = "Score: 0"
+        return scoreLabel
+    }
+    
+    private func updateScoreLabel() {
+        if let scoreLabel = view.viewWithTag(101) as? UILabel {
+            scoreLabel.text = "Score: \(scoreManager.score)"
+            scoreLabel.sizeToFit()
+            scoreLabel.center.x = (startButtonView.frame.maxX + hintButtonView.frame.minX) / 2
+        }
+    }
+    
 //    генерация массива карточек на основе данных модели
     private func getCardsBy(modelData: [Card]) -> [UIView] {
 //        хранилище для представлений карточек
@@ -201,6 +233,9 @@ class BoardGameController: UIViewController {
                     
 //                    если карточки одинаковые
                     if game.checkCards(firstCard, secondCard) {
+//                        обновляем очки
+                        scoreManager.matchedPair()
+                        updateScoreLabel()
 //                        анимированно скрываем их
                         UIView.animate(withDuration: 0.3, animations: {
                             self.flippedCards.first!.layer.opacity = 0
@@ -214,6 +249,9 @@ class BoardGameController: UIViewController {
 //                        в ином случае
                     } else {
 //                        переворачиваем карточки рубашкой вверх
+//                        обновляем очки
+                        scoreManager.mismatch()
+                        updateScoreLabel()
                         for card in self.flippedCards {
                             (card as! FlippableView).flip(isHint: false)
                         }
@@ -242,12 +280,19 @@ class BoardGameController: UIViewController {
     }
 
     func startGame() {
+        scoreManager.reset()
+        updateScoreLabel()
+        
         game = getNewGame()
         let cards = getCardsBy(modelData: game.cards)
         placeCardsOnBoard(cards)
     }
     
     func showHint() {
+//        обновляем очки
+        scoreManager.usedHint()
+        updateScoreLabel()
+        
         var hintCards = [FlippableView]()
 
         // переворачиваем все карты рубашкой вниз, которые еще не перевернуты
