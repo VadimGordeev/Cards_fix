@@ -10,7 +10,8 @@ import UIKit
 protocol FlippableView: UIView {
     var isFlipped: Bool { get set }
     var flipCompletionHandler: ((FlippableView) -> Void)? { get set }
-    func flip()
+    var isInteractionLocked: Bool { get set }
+    func flip(isHint: Bool)
 }
 
 
@@ -21,12 +22,14 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
             self.setNeedsDisplay()
         }
     }
+    var isInteractionLocked = false
     var flipCompletionHandler: ((FlippableView) -> Void)?
-    func flip() {
-//        определяем, между какими представлениями осуществить переход
+    
+    func flip(isHint: Bool = false) {
+        //        определяем, между какими представлениями осуществить переход
         let fromView = isFlipped ? frontSideView : backSideView
         let toView = isFlipped ? backSideView : frontSideView
-//        запуск анимированного перехода
+        //        запуск анимированного перехода
         UIView
             .transition(
                 from: fromView,
@@ -34,11 +37,12 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
                 duration: 0.5,
                 options: [.transitionFlipFromTop],
                 completion: { _ in
-                    //                обработчик переворота
-                    self.flipCompletionHandler?(self)
+                    if !isHint {
+                        self.flipCompletionHandler?(self)
+                    }
                 }
             )
-//        isFlipped = !isFlipped
+        //        isFlipped = !isFlipped
         isFlipped.toggle()
     }
     
@@ -77,6 +81,9 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
     
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if isInteractionLocked { return }
+        super.touchesBegan(touches, with: event)
+        
         guard let touch = touches.first else { return }
         // точка касания внутри карточки
         let locationInCard = touch.location(in: self)
@@ -86,6 +93,9 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if isInteractionLocked { return }
+        super.touchesBegan(touches, with: event)
+        
         guard let touch = touches.first, let superview = superview else { return }
         
         // точка касания относительно доски
@@ -108,6 +118,9 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if isInteractionLocked { return }
+        super.touchesBegan(touches, with: event)
+        
         if self.frame.origin == startTouchPoint {
             flip()
         }

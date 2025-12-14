@@ -18,14 +18,18 @@ class BoardGameController: UIViewController {
         super.loadView()
         view.addSubview(startButtonView)
         view.addSubview(boardGameView)
+        view.addSubview(hintButtonView)
     }
     
     //    изменение положения кнопки
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
-        startButtonView.center.x = view.center.x
+        startButtonView.frame.origin.x = 20
         startButtonView.frame.origin.y = view.safeAreaInsets.top
+            
+        hintButtonView.frame.origin.x = view.bounds.width - hintButtonView.frame.width - 20
+        hintButtonView.frame.origin.y = view.safeAreaInsets.top
         
         let margin: CGFloat = 10
         boardGameView.frame = CGRect(
@@ -37,6 +41,7 @@ class BoardGameController: UIViewController {
             - view.safeAreaInsets.bottom
             - margin
         )
+        startGame()
     }
     
 //    количество пар уникальных карточек
@@ -53,6 +58,8 @@ class BoardGameController: UIViewController {
 
 //    кнопка для запуска/перезапуска игры
     lazy var startButtonView = getStartButtonView()
+//    кнопка подсказки
+    lazy var hintButtonView = getHintButtonView()
 //    игровое поле
     lazy var boardGameView = getBoardGameView()
     
@@ -85,19 +92,61 @@ class BoardGameController: UIViewController {
     }
     
     private func getStartButtonView() -> UIButton {
-//        1 Создание кнопки
-        let button = UIButton(frame: CGRect(x: 0, y: 0, width: 200, height: 50))
-//        2 Настройка внешнего вида кнопки
-        button.setTitle("Start Game", for: .normal)
-        button.setTitleColor(.black, for: .normal)
-        button.setTitleColor(.gray, for: .highlighted)
-        button.backgroundColor = .systemGray4
+//    // 1 создание кнопки
+        let button = UIButton(type: .system)
+
+        // 2 настройка внешнего вида через конфигурацию
+        var config = UIButton.Configuration.filled()
+        config.title = "Restart Game"
+        config.baseBackgroundColor = .systemGray4
+        config.baseForegroundColor = .black
+
+        // внутренние отступы
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+
+        // присваиваем конфигурацию кнопке
+        button.configuration = config
+
+        // скругление углов (через layer)
         button.layer.cornerRadius = 10
+        button.clipsToBounds = true
+
+        // подгонка размера под текст + отступы
+        button.sizeToFit()
         
 //        подключение обработчика нажатия на кнопку до iOS 14
 //        button.addTarget(nil, action: #selector(startGame(_:)), for: .touchUpInside)
-        button.addAction(UIAction(title: "Start Game", handler: { action in
+        button.addAction(UIAction(title: "Restart Game", handler: { action in
             self.startGame()
+        }), for: .touchUpInside)
+        
+        return button
+    }
+    
+    private func getHintButtonView() -> UIButton {
+        let button = UIButton(type: .system)
+
+        // создаем конфигурацию
+        var config = UIButton.Configuration.filled()
+        config.title = "Show Hint"
+        config.baseBackgroundColor = .systemGray4
+        config.baseForegroundColor = .black
+
+        // внутренние отступы
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+
+        // присваиваем конфигурацию кнопке
+        button.configuration = config
+
+        // скругление углов
+        button.layer.cornerRadius = 10
+        button.clipsToBounds = true
+
+        // размер под текст + отступы
+        button.sizeToFit()
+        
+        button.addAction(UIAction(title: "Show hint", handler: { action in
+            self.showHint()
         }), for: .touchUpInside)
         
         return button
@@ -166,7 +215,7 @@ class BoardGameController: UIViewController {
                     } else {
 //                        переворачиваем карточки рубашкой вверх
                         for card in self.flippedCards {
-                            (card as! FlippableView).flip()
+                            (card as! FlippableView).flip(isHint: false)
                         }
                     }
                 }
@@ -196,5 +245,27 @@ class BoardGameController: UIViewController {
         game = getNewGame()
         let cards = getCardsBy(modelData: game.cards)
         placeCardsOnBoard(cards)
+    }
+    
+    func showHint() {
+        var hintCards = [FlippableView]()
+
+        // переворачиваем все карты рубашкой вниз, которые еще не перевернуты
+        for card in cardViews {
+            let flippable = card as! FlippableView
+            if !flippable.isFlipped {
+                flippable.isInteractionLocked = true
+                flippable.flip(isHint: true)   // только переворот, не трогаем flippedCards
+                hintCards.append(flippable)
+            }
+        }
+
+        // через 1 секунду переворачиваем обратно
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            for card in hintCards {
+                card.flip(isHint: true)
+                card.isInteractionLocked = false
+            }
+        }
     }
 }
