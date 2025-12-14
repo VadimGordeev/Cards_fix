@@ -87,13 +87,26 @@ class CardView<ShapeType: ShapeLayerProtocol>: UIView, FlippableView {
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first, let superview = superview else { return }
+        
         // точка касания относительно доски
         let locationInSuperview = touch.location(in: superview)
-        // смещаем карточку так, чтобы точка касания осталась на месте
-        frame.origin.x = locationInSuperview.x - touchOffset.x
-        frame.origin.y = locationInSuperview.y - touchOffset.y
+        
+        // вычисляем новые координаты с учётом смещения
+        var newX = locationInSuperview.x - touchOffset.x
+        var newY = locationInSuperview.y - touchOffset.y
+        
+        // ограничиваем по горизонтали
+        newX = max(0, newX) // не меньше 0
+        newX = min(superview.bounds.width - frame.width, newX)
+        
+        // ограничиваем по вертикали
+        newY = max(0, newY)
+        newY = min(superview.bounds.height - frame.height, newY)
+        
+        // применяем новые координаты
+        frame.origin = CGPoint(x: newX, y: newY)
     }
-
+    
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if self.frame.origin == startTouchPoint {
             flip()
